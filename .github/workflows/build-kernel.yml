@@ -84,7 +84,7 @@ jobs:
             ln -sfn ../KernelSU/kernel drivers/kernelsu
           fi
 
-          # Tüm Kconfig dosyalarındaki bağımlılık engellerini kaldır
+          # Kconfig bağımlılık engellerini temizle
           find drivers/kernelsu/ KernelSU/ -name "Kconfig*" -exec sed -i -E 's/^[[:space:]]*depends on.*/# &/' {} + || true
 
           sed -i '/kernelsu\/Kconfig/d' drivers/Kconfig
@@ -106,7 +106,7 @@ jobs:
             grep -q "copy_from_user_nofault" include/linux/uaccess.h || printf '\n#ifndef copy_from_user_nofault\n#define copy_from_user_nofault(dst, src, size) copy_from_user(dst, (const void __user *)(src), size)\n#define copy_to_user_nofault(dst, src, size) copy_to_user((void __user *)(dst), src, size)\n#define strncpy_from_user_nofault(dst, src, size) strncpy_from_user(dst, (const char __user *)(src), size)\n#endif\n' >> include/linux/uaccess.h
           fi
 
-          # 4. arch/arm64/include/asm/uaccess.h access_ok 2/3 argüman desteği
+          # 4. arch/arm64/include/asm/uaccess.h access_ok desteği
           if [ -f arch/arm64/include/asm/uaccess.h ]; then
             sed -i -E 's|^[[:space:]]*#define[[:space:]]+access_ok\(type,.*|#define _ACCESS_OK_2(addr, size) __range_ok((unsigned long)(addr), (unsigned long)(size))\n#define _ACCESS_OK_3(type, addr, size) __range_ok((unsigned long)(addr), (unsigned long)(size))\n#define _ACCESS_OK_OVERLOAD(_1, _2, _3, NAME, ...) NAME\n#define access_ok(...) _ACCESS_OK_OVERLOAD(__VA_ARGS__, _ACCESS_OK_3, _ACCESS_OK_2)(__VA_ARGS__)|' arch/arm64/include/asm/uaccess.h
             echo "[OK] arch/arm64/include/asm/uaccess.h access_ok makrosu güncellendi."
@@ -289,13 +289,22 @@ jobs:
                           )
                           print(f"[OK] selinux.c doğrudan güncellendi: {real_p}")
 
-                      # dispatch.c içindeki hook_type stringini güvenle "Manual" yap
+                      # dispatch.c hook_type stringini 'Manual' yap ve 4.14 kvcalloc uyumluluğunu sağla
                       if file == "dispatch.c":
                           c = c.replace('const char *type = "Unknown";', 'const char *type = "Manual";')
                           c = c.replace('char *type = "Unknown";', 'char *type = "Manual";')
                           c = c.replace('const char *type = "None";', 'const char *type = "Manual";')
                           c = c.replace('char *type = "None";', 'char *type = "Manual";')
-                          print(f"[OK] dispatch.c hook_type stringi 'Manual' olarak ayarlandı: {real_p}")
+                          if "kvcalloc" in c and "#define kvcalloc" not in c:
+                              kvcalloc_def = (
+                                  "#include <linux/mm.h>\n"
+                                  "#include <linux/slab.h>\n"
+                                  "#ifndef kvcalloc\n"
+                                  "#define kvcalloc(n, elem_size, flags) kvmalloc_array(n, elem_size, (flags) | __GFP_ZERO)\n"
+                                  "#endif\n\n"
+                              )
+                              c = kvcalloc_def + c
+                          print(f"[OK] dispatch.c güncellendi: {real_p}")
 
                       if c != orig_c:
                           with open(real_p, "w", encoding="utf-8") as f:
