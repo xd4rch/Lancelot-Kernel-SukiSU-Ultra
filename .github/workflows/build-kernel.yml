@@ -177,7 +177,7 @@ jobs:
               "rules.c": "int apply_kernelsu_rules(void){return 0;}\nint ksu_load_rules(void){return 0;}\n",
               "sepolicy.c": "struct selinux_policy;\nstruct selinux_policy *ksu_dup_sepolicy(struct selinux_policy *o){return (void*)0;}\nint handle_sepolicy(unsigned long arg){return 0;}\n",
               "selinux_hide.c": "int ksu_selinux_hide_init(void){return 0;}\nvoid ksu_selinux_hide_exit(void){}\nbool ksu_is_selinux_hide_enabled(void){return false;}\nint ksu_set_selinux_hide(bool e){return 0;}\nint ksu_get_selinux_hide(void){return 0;}\nvoid ksu_selinux_hide_handle_post_fs_data(void){}\nvoid ksu_selinux_hide_drop_backup_if_unused(void){}\nvoid ksu_selinux_hide_handle_second_stage(void){}\n",
-              "cpu_spoof.c": "int ksu_cpu_spoof_init(void){return 0;}\nvoid ksu_cpu_spoof_exit(void){}\nbool ksu_is_cpu_spoof_enabled(void){return false;}\nint ksu_set_cpu_spoof(bool e){return 0;}\nint ksu_get_cpu_spoof(void){return 0;}\nvoid ksu_set_spoof_cpu(bool e){}\n",
+              "cpu_spoof.c": "int ksu_cpu_spoof_init(void){return 0;}\nvoid ksu_cpu_spoof_exit(void){}\nbool ksu_is_cpu_spoof_enabled(void){return false;}\nint ksu_set_cpu_spoof(bool e){return 0;}\nint ksu_get_cpu_spoof(void){return 0;}\nvoid ksu_set_spoof_cpu(bool e){}\nint ksu_extension_cpu_spoof_io(unsigned int cmd, void __user *arg){return 0;}\n",
               "su_mount_ns.c": "int ksu_su_mount_ns_init(void){return 0;}\nvoid ksu_su_mount_ns_exit(void){}\nint setup_mount_ns(void){return 0;}\n"
           }
 
@@ -198,7 +198,7 @@ jobs:
 
                       if file in stub_map:
                           with open(real_p, "w", encoding="utf-8") as f:
-                              f.write("#include <linux/types.h>\n#include <linux/stddef.h>\n\n" + stub_map[file])
+                              f.write("#include <linux/types.h>\n#include <linux/stddef.h>\n#include <linux/uaccess.h>\n\n" + stub_map[file])
                           print(f"[OK] Stub uygulandı: {real_p}")
                           continue
 
